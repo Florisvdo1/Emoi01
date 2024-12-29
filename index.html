@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Emoji Planner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <style>
+    /* Basic resets */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      touch-action: none; /* helps prevent default scrolling during drag on mobile */
+    }
+
+    body {
+      font-family: sans-serif;
+      background: #f0f0f0;
+      overflow-x: hidden;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      background: #fff;
+      padding: 1rem;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      z-index: 10;
+      position: sticky;
+      top: 0;
+    }
+
+    header button {
+      padding: 0.5rem 1rem;
+      border: none;
+      background: #ffca28;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    main {
+      padding: 1rem;
+    }
+
+    /* 3D Carousel Container */
+    .carousel-container {
+      perspective: 800px;
+      width: 100%;
+      margin: 1rem auto;
+      display: flex;
+      justify-content: center;
+    }
+
+    .carousel {
+      width: 300px;
+      height: 200px;
+      transform-style: preserve-3d;
+      transition: transform 0.8s;
+      position: relative;
+    }
+
+    .placeholder {
+      width: 100px;
+      height: 100px;
+      background: #ddd;
+      border: 2px dashed #aaa;
+      border-radius: 10px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1rem;
+      text-align: center;
+      color: #555;
+    }
+
+    /* Positions for the 3 placeholders around a Y-rotation */
+    .morning {
+      transform: rotateY(0deg) translateZ(150px) translate(-50%, -50%);
+    }
+    .midday {
+      transform: rotateY(120deg) translateZ(150px) translate(-50%, -50%);
+    }
+    .evening {
+      transform: rotateY(240deg) translateZ(150px) translate(-50%, -50%);
+    }
+
+    /* Button toggles for the carousel rotation */
+    .carousel.show-midday {
+      transform: rotateY(-120deg);
+    }
+    .carousel.show-evening {
+      transform: rotateY(-240deg);
+    }
+
+    /* Scrollable deck of emojis */
+    .emoji-deck {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      max-width: 500px;
+      margin: 1rem auto;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      overflow-y: auto;
+      max-height: 300px;
+    }
+
+    .emoji-item {
+      font-size: 2rem;
+      cursor: grab;
+      user-select: none;
+      display: inline-block;
+      text-align: center;
+      width: 3rem;
+      height: 3rem;
+      line-height: 3rem;
+      border: 2px solid transparent;
+      border-radius: 50%;
+      transition: box-shadow 0.3s;
+    }
+
+    .emoji-item:active {
+      cursor: grabbing;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Absolutely positioned emoji during drag */
+    .dragging {
+      position: absolute !important;
+      z-index: 9999;
+      pointer-events: none; /* helps pointer stay on the dragged item */
+    }
+
+    /* Confetti */
+    .confetti-piece {
+      width: 10px;
+      height: 10px;
+      position: fixed;
+      top: -10px;
+      background-color: red; /* color changed dynamically */
+      opacity: 0.8;
+      animation: fall 2.5s linear forwards;
+      pointer-events: none;
+    }
+
+    @keyframes fall {
+      to {
+        transform: translate3d(0, 100vh, 0) rotateZ(360deg);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <button id="resetBtn">Reset</button>
+    <button id="homeworkBtn">Homework</button>
+    <button id="saveBtn">Save</button>
+  </header>
+
+  <main>
+    <!-- 3D Carousel for Morning, Midday, Evening -->
+    <div class="carousel-container">
+      <div class="carousel" id="carousel">
+        <div class="placeholder morning" data-period="Morning">Morning</div>
+        <div class="placeholder midday" data-period="Midday">Midday</div>
+        <div class="placeholder evening" data-period="Evening">Evening</div>
+      </div>
+    </div>
+
+    <!-- Scrollable deck of emojis -->
+    <div class="emoji-deck" id="emojiDeck">
+      <!-- Sample emojis; add more as you see fit -->
+      <div class="emoji-item" draggable="false">☕</div>
+      <div class="emoji-item" draggable="false">\u{1F914}</div>
+      <div class="emoji-item" draggable="false">\u{1F60E}</div>
+      <div class="emoji-item" draggable="false">\u{1F606}</div>
+      <div class="emoji-item" draggable="false">\u{1F4AA}</div>
+      <div class="emoji-item" draggable="false">\u{1F353}</div>
+      <div class="emoji-item" draggable="false">\u{1F44F}</div>
+      <div class="emoji-item" draggable="false">\u{1F3B5}</div>
+      <div class="emoji-item" draggable="false">\u{26BD}</div>
+      <div class="emoji-item" draggable="false">\u{1F3C3}</div>
+      <div class="emoji-item" draggable="false">\u{1F34E}</div>
+      <div class="emoji-item" draggable="false">\u{1F382}</div>
+      <div class="emoji-item" draggable="false">\u{1F389}</div>
+      <div class="emoji-item" draggable="false">\u{1F4F1}</div>
+      <div class="emoji-item" draggable="false">\u{1F35F}</div>
+      <div class="emoji-item" draggable="false">\u{1F37B}</div>
+    </div>
+  </main>
+
+  <script>
+    /*********************************
+     * CONFETTI LOGIC (HOMEWORK BTN)
+     *********************************/
+    const homeworkBtn = document.getElementById("homeworkBtn");
+    homeworkBtn.addEventListener("click", () => {
+      // Quick example of confetti
+      for (let i = 0; i < 20; i++) {
+        createConfettiPiece();
+      }
+    });
+
+    function createConfettiPiece() {
+      const confetti = document.createElement("div");
+      confetti.classList.add("confetti-piece");
+      // Random color
+      confetti.style.backgroundColor = `hsl(${Math.floor(Math.random() * 360)}, 100%, 50%)`;
+      // Random horizontal start
+      confetti.style.left = Math.random() * 100 + "%";
+      document.body.appendChild(confetti);
+
+      // Remove after animation
+      confetti.addEventListener("animationend", () => {
+        confetti.remove();
+      });
+    }
+
+    /*********************************
+     * DRAG-AND-DROP EMOJI LOGIC
+     *********************************/
+    let draggedItem = null;           // the DOM element being dragged
+    let offsetX = 0;                  // difference between finger & item’s left
+    let offsetY = 0;                  // difference between finger & item’s top
+    let originalParent = null;        // to return if dropped outside placeholders
+    let originalNextSibling = null;   // for the original flow position
+    let isDragging = false;
+
+    // Listen to both touch + mouse to handle mobile and desktop
+    const emojiItems = document.querySelectorAll(".emoji-item");
+    emojiItems.forEach((item) => {
+      item.addEventListener("touchstart", dragStart, { passive: false });
+      item.addEventListener("mousedown", dragStart);
+    });
+
+    function dragStart(e) {
+      e.preventDefault();
+
+      // Single-drag logic: if something’s already dragging, exit
+      if (isDragging) return;
+
+      isDragging = true;
+      draggedItem = e.currentTarget;
+      draggedItem.classList.add("dragging");
+
+      // Save original parent, so if user drops outside placeholders we can return it
+      originalParent = draggedItem.parentNode;
+      originalNextSibling = draggedItem.nextSibling;
+
+      // Move item to body so it can float above everything
+      document.body.appendChild(draggedItem);
+
+      // Find the pointer position
+      const pointerX = e.touches ? e.touches[0].clientX : e.clientX;
+      const pointerY = e.touches ? e.touches[0].clientY : e.clientY;
+
+      // Item bounding rectangle (before we move it)
+      const rect = draggedItem.getBoundingClientRect();
+      offsetX = pointerX - rect.left;
+      offsetY = pointerY - rect.top;
+
+      updatePosition(pointerX, pointerY);
+
+      // Attach move and end handlers
+      document.addEventListener("touchmove", dragMove, { passive: false });
+      document.addEventListener("mousemove", dragMove);
+      document.addEventListener("touchend", dragEnd);
+      document.addEventListener("mouseup", dragEnd);
+    }
+
+    function dragMove(e) {
+      if (!isDragging) return;
+
+      e.preventDefault();
+      const pointerX = e.touches ? e.touches[0].clientX : e.clientX;
+      const pointerY = e.touches ? e.touches[0].clientY : e.clientY;
+      updatePosition(pointerX, pointerY);
+    }
+
+    function updatePosition(pointerX, pointerY) {
+      // Adjust for offset so the item stays under the finger
+      draggedItem.style.left = (pointerX - offsetX) + "px";
+      draggedItem.style.top = (pointerY - offsetY) + "px";
+    }
+
+    function dragEnd() {
+      if (!isDragging) return;
+      isDragging = false;
+
+      // Check if dropped on a valid placeholder
+      const placeholders = document.querySelectorAll(".placeholder");
+      let droppedInPlaceholder = false;
+
+      placeholders.forEach((placeholder) => {
+        const rect = placeholder.getBoundingClientRect();
+        const itemRect = draggedItem.getBoundingClientRect();
+
+        // Basic overlap check
+        if (
+          itemRect.left < rect.right &&
+          itemRect.right > rect.left &&
+          itemRect.top < rect.bottom &&
+          itemRect.bottom > rect.top
+        ) {
+          placeholder.appendChild(draggedItem);
+          // Reset style so it doesn’t stay absolute in the placeholder
+          draggedItem.removeAttribute("style");
+          draggedItem.classList.remove("dragging");
+          droppedInPlaceholder = true;
+        }
+      });
+
+      if (!droppedInPlaceholder) {
+        // Return to original place
+        if (originalNextSibling) {
+          originalParent.insertBefore(draggedItem, originalNextSibling);
+        } else {
+          originalParent.appendChild(draggedItem);
+        }
+        draggedItem.removeAttribute("style");
+        draggedItem.classList.remove("dragging");
+      }
+
+      // Remove event listeners
+      document.removeEventListener("touchmove", dragMove);
+      document.removeEventListener("mousemove", dragMove);
+      document.removeEventListener("touchend", dragEnd);
+      document.removeEventListener("mouseup", dragEnd);
+
+      draggedItem = null;
+    }
+
+    /*********************************
+     * CAROUSEL & BUTTON LOGIC
+     *********************************/
+    const carousel = document.getElementById("carousel");
+
+    // Example “Save” toggles to midday, “Reset” toggles to morning, etc.
+    document.getElementById("saveBtn").addEventListener("click", () => {
+      carousel.classList.remove("show-evening");
+      carousel.classList.add("show-midday");
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      carousel.classList.remove("show-midday");
+      carousel.classList.remove("show-evening");
+
+      // Return all emojis to deck
+      const deck = document.getElementById("emojiDeck");
+      const placeholders = document.querySelectorAll(".placeholder");
+      placeholders.forEach((placeholder) => {
+        const children = Array.from(placeholder.children);
+        children.forEach((child) => {
+          if (child.classList.contains("emoji-item")) {
+            deck.appendChild(child);
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
